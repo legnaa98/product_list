@@ -8,7 +8,6 @@ import time
 import os
 
 s = HTMLSession()
-product_list = []
 base_url = 'https://www.catalogospromocionales.com'
 
 def clean_link(link, bad_character):
@@ -24,7 +23,7 @@ def check_bad_string_links(link):
 		if character in link:
 			link = clean_link(link, character)
 		else:
-			pass
+			continue
 	# return cleaned link
 	return(link)
 
@@ -42,15 +41,15 @@ def download_images(url_list, reference):
 	idx = 1
 	img_names = []
 	for url in url_list:
-		if idx%2==0:
-			print(f'Downloading image {idx}/{len(url_list)}')
+		if idx%len(url_list)==0:
+			print(f'Downloaded {idx}/{len(url_list)} images')
 		filename = reference + f'_{idx}.jpg'
 		img_names.append(filename)
 		try:
 			urllib.request.urlretrieve(url, os.path.join(save_path, filename))
 		except:
-			print(f'{url} is having trouble with the download of the image with filename: {filename}\nStoring data in an error log.')
-			url_error = open('error_log.txt', 'a')
+			print(f'{url} is having trouble with the download of the image with filename: {filename}\nStoring details in img_url_error_log.txt and file_error_log.txt.')
+			url_error = open('img_url_error_log.txt', 'a')
 			url_error.write(f'{url}\n')
 			url_error.close()
 			file_error = open('file_error_log.txt', 'a')
@@ -84,7 +83,7 @@ def get_images(link, reference):
 		elif '/images' in img_url[0:7]:
 			imgs_urls.append(base_url + img_url)
 		else:
-			pass
+			continue
 
 	img_names = download_images(imgs_urls, reference)
 	return(img_names)
@@ -97,8 +96,24 @@ def request(url):
 def parse(products, category):
 	for item in products.absolute_links:
 		item = check_bad_string_links(item)
-		r = s.get(item)
-		string = r.html.find('div.hola', first=True).text.split('\n', maxsplit=2)
+		# request to product link
+		try:
+			r = s.get(item)
+		except:
+			print(f'Unable to make request to {item} logging error to productLink_error_log.txt')
+			product_link_error = open('productLink_error_log.txt', 'a')
+			product_link_error.write(f'{item}\n')
+			product_link_error.close() 
+			continue
+		# get product info from product link
+		try:
+			string = r.html.find('div.hola', first=True).text.split('\n', maxsplit=2)
+		except:
+			print(f'Unable to get product info from {item} logging error to productInfo_error_log.txt')
+			product_info_error = open('productInfo_error_log.txt', 'a')
+			product_info_error.write(f'{item}\n')
+			product_info_error.close() 
+			continue
 		# save the relevant features
 		name = string[0]
 		ref = string[1]
@@ -116,10 +131,11 @@ def parse(products, category):
 		}
 		product_list.append(product)
 
-def output():
+def output(csv_filename):
 	df = pd.DataFrame(product_list)
-	df.to_csv('products_demo.csv', index=False)
-	print('Saved to csv file')
+	csv_filename += '.csv'
+	df.to_csv(csv_filename, index=False)
+	print(f'Saved csv file as {csv_filename}')
 
 
 # get category names and respective url
@@ -130,6 +146,7 @@ w = 1
 start_time = time.time()
 
 for x, y in zip(cat_urls, cat_names):
+	product_list = []
 	print(f'Retrieving data from category {w}/{N_cats} : {y}')
 	# get the list of every page within tthe current product
 	page_list = paginate(x, base_url)
@@ -144,35 +161,7 @@ for x, y in zip(cat_urls, cat_names):
 		v += 1
 		time.sleep(1)
 	print('\n')
-	w += 1
-output()
+	output(y)
+	w += 1	
+# consider putting time log
 print('--------This process took %s seconds--------' %(time.time() - start_time))
-
-'''
-x = 1
-total_products_cache = []
-
-while True:
-	try:
-		#https://www.catalogospromocionales.com/Catalogo/Default.aspx?id=23&Page={x}
-		products = request(f'https://www.catalogospromocionales.com/Catalogo/Default.aspx?id=292&Page={x}')
-		print('Getting items from page {}'.format(x))
-		parse(products)
-		total_products = len(product_list)
-		print('Total items: {}'.format(total_products))
-
-		total_products_cache.append(total_products)
-		if x!=1:
-			if total_products_cache[-1] != total_products_cache[-2]:
-				x += 1
-				time.sleep(1)
-			else:
-				break
-		else:
-			x += 1
-			time.sleep(1)
-	except:
-		print('No more items!')
-		break
-
-output()'''
