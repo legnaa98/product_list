@@ -1,12 +1,12 @@
+from get_categories import get_categories
 from requests_html import HTMLSession
+from paginate import paginate
 from bs4 import BeautifulSoup as bs
 import urllib.request
 import pandas as pd
 import time
 import os
 
-#url = 'https://www.catalogospromocionales.com/promocionales/mugs.html'
-#https://www.catalogospromocionales.com/Catalogo/Default.aspx?id=23&Page=17
 s = HTMLSession()
 product_list = []
 base_url = 'https://www.catalogospromocionales.com'
@@ -31,7 +31,9 @@ def check_bad_string_links(link):
 def download_images(url_list, reference):
 	'''
 	Input:
+		url       : list with all urls of images within a product
 		reference : reference name to use in images filenames
+	
 	Output:
 		img_names : names of the image filenames
 	'''
@@ -40,9 +42,20 @@ def download_images(url_list, reference):
 	idx = 1
 	img_names = []
 	for url in url_list:
+		if idx%2==0:
+			print(f'Downloading image {idx}/{len(url_list)}')
 		filename = reference + f'_{idx}.jpg'
 		img_names.append(filename)
-		urllib.request.urlretrieve(url, os.path.join(save_path, filename))
+		try:
+			urllib.request.urlretrieve(url, os.path.join(save_path, filename))
+		except:
+			print(f'{url} is having trouble with the download of the image with filename: {filename}\nStoring data in an error log.')
+			url_error = open('error_log.txt', 'a')
+			url_error.write(f'{url}\n')
+			url_error.close()
+			file_error = open('file_error_log.txt', 'a')
+			file_error.write(f'{filename}')
+			file_error.close()
 		idx += 1
 
 	return(img_names)
@@ -53,6 +66,7 @@ def get_images(link, reference):
 	'''
 	Inputs:
 		link      : link to be scraped
+	
 	Output:
 		img_names : names of the image filenames
 	'''
@@ -80,12 +94,11 @@ def request(url):
 	r.html.render(sleep=1)
 	return(r.html.xpath('/html/body/form/div[2]/div/div/div[1]/div/div[1]/div[3]/div[2]/div/div/div[3]', first=True))
                         
-def parse(products):
+def parse(products, category):
 	for item in products.absolute_links:
 		item = check_bad_string_links(item)
 		r = s.get(item)
 		string = r.html.find('div.hola', first=True).text.split('\n', maxsplit=2)
-		
 		# save the relevant features
 		name = string[0]
 		ref = string[1]
@@ -95,6 +108,7 @@ def parse(products):
 
 		product = {
 			'name': name,
+			'category': category,
 			'reference': ref,
 			'description': description,
 			'url': url,
@@ -108,7 +122,33 @@ def output():
 	print('Saved to csv file')
 
 
+# get category names and respective url
+cat_urls, cat_names = get_categories(base_url=base_url)
+N_cats = len(cat_urls)
+w = 1
 
+start_time = time.time()
+
+for x, y in zip(cat_urls, cat_names):
+	print(f'Retrieving data from category {w}/{N_cats} : {y}')
+	# get the list of every page within tthe current product
+	page_list = paginate(x, base_url)
+	N_pages = len(page_list)
+	v = 1
+	for page in page_list:
+		products = request(page)
+		print(f'Getting items from page {v}/{N_pages}')
+		parse(products, y)
+		total_products = len(product_list)
+		print('Total items: {}'.format(total_products))		
+		v += 1
+		time.sleep(1)
+	print('\n')
+	w += 1
+output()
+print('--------This process took %s seconds--------' %(time.time() - start_time))
+
+'''
 x = 1
 total_products_cache = []
 
@@ -135,4 +175,4 @@ while True:
 		print('No more items!')
 		break
 
-output()
+output()'''
