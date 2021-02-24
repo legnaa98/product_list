@@ -79,7 +79,7 @@ def request(url):
 	r = s.get(url)
 	r.html.render(sleep=1)
 	return(r.html.xpath('/html/body/form/div[2]/div/div/div[1]/div/div[1]/div[3]/div[2]/div/div/div[3]', first=True))
-
+                        
 def parse(products):
 	for item in products.absolute_links:
 		item = check_bad_string_links(item)
@@ -115,7 +115,7 @@ total_products_cache = []
 while True:
 	try:
 		#https://www.catalogospromocionales.com/Catalogo/Default.aspx?id=23&Page={x}
-		products = request(f'https://www.catalogospromocionales.com/Catalogo/Default.aspx?id=23&Page={x}')
+		products = request(f'https://www.catalogospromocionales.com/Catalogo/Default.aspx?id=292&Page={x}')
 		print('Getting items from page {}'.format(x))
 		parse(products)
 		total_products = len(product_list)
