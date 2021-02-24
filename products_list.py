@@ -1,7 +1,9 @@
 from requests_html import HTMLSession
 from bs4 import BeautifulSoup as bs
+import urllib.request
 import pandas as pd
 import time
+import os
 
 #url = 'https://www.catalogospromocionales.com/promocionales/mugs.html'
 #https://www.catalogospromocionales.com/Catalogo/Default.aspx?id=23&Page=17
@@ -26,27 +28,52 @@ def check_bad_string_links(link):
 	# return cleaned link
 	return(link)
 
+def download_images(url_list, reference):
+	'''
+	Input:
+		reference : reference name to use in images filenames
+	Output:
+		img_names : names of the image filenames
+	'''
+	save_path = '/media/MLdata/scraped_imgs/'
+	# start image count index and empty list
+	idx = 1
+	img_names = []
+	for url in url_list:
+		filename = reference + f'_{idx}.jpg'
+		img_names.append(filename)
+		urllib.request.urlretrieve(url, os.path.join(save_path, filename))
+		idx += 1
+
+	return(img_names)
+
+
+
 def get_images(link, reference):
 	'''
 	Inputs:
 		link      : link to be scraped
-		reference : reference name to use in images filenames
+	Output:
+		img_names : names of the image filenames
 	'''
 	r = s.get(link)
 	soup = bs(r.content, 'lxml')
-	#main_img = soup.find_all('div', id='gal1') # need procesing
+	imgs_urls = []
+
+	# find all images in link
 	imgs = soup.find_all('img', alt="")
 	for item in imgs:
 		img_url = item.get('src')
-		# check if image is primary image with url pattern
-		# check if image is alternate image with url pattern
-		# discard all images that are not primary or alternate
-		# complete urls of alternate images with base url
-	# proceed to download images and rename them with the indicator of the reference
+		# check if image is primary or alternate image with url pattern
+		if 'https://' in img_url:
+			imgs_urls.append(img_url)
+		elif '/images' in img_url[0:7]:
+			imgs_urls.append(base_url + img_url)
+		else:
+			pass
 
-
-	
-
+	img_names = download_images(imgs_urls, reference)
+	return(img_names)
 
 def request(url):
 	r = s.get(url)
@@ -63,12 +90,15 @@ def parse(products):
 		name = string[0]
 		ref = string[1]
 		description = string[-1].replace('\n', ' ')
+		url = item
+		img_names = get_images(url, ref)
 
 		product = {
 			'name': name,
 			'reference': ref,
 			'description': description,
-			'url': item
+			'url': url,
+			'img_names': img_names
 		}
 		product_list.append(product)
 
@@ -82,7 +112,7 @@ def output():
 x = 1
 total_products_cache = []
 
-'''while True:
+while True:
 	try:
 		#https://www.catalogospromocionales.com/Catalogo/Default.aspx?id=23&Page={x}
 		products = request(f'https://www.catalogospromocionales.com/Catalogo/Default.aspx?id=23&Page={x}')
@@ -105,4 +135,4 @@ total_products_cache = []
 		print('No more items!')
 		break
 
-output()'''
+output()
