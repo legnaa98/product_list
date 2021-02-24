@@ -54,7 +54,7 @@ def download_images(url_list, reference):
 			url_error.write(f'{url}\n')
 			url_error.close()
 			file_error = open('file_error_log.txt', 'a')
-			file_error.write(f'{filename}')
+			file_error.write(f'{filename}\n')
 			file_error.close()
 		idx += 1
 
