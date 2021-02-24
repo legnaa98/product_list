@@ -32,8 +32,8 @@ def get_categories(url='https://www.catalogospromocionales.com/seccion/subcatego
 		# get category name
 		name = url.split('/')[-1].split('.html')[0]
 		cat_names.append(name)
-		print(name)
 	
 	return(cat_urls, cat_names)
 
-get_categories(base_url)
+if __name__ == '__main__':
+	get_categories()
