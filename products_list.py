@@ -9,6 +9,8 @@ import os
 
 s = HTMLSession()
 base_url = 'https://www.catalogospromocionales.com'
+save_path = './scraped_imgs'#'/media/MLdata/scraped_imgs/'
+csv_dir = './csv_files'
 
 def clean_link(link, bad_character):
 	# clean bad links
@@ -36,7 +38,6 @@ def download_images(url_list, reference):
 	Output:
 		img_names : names of the image filenames
 	'''
-	save_path = '/media/MLdata/scraped_imgs/'
 	# start image count index and empty list
 	idx = 1
 	img_names = []
@@ -58,8 +59,6 @@ def download_images(url_list, reference):
 		idx += 1
 
 	return(img_names)
-
-
 
 def get_images(link, reference):
 	'''
@@ -90,7 +89,7 @@ def get_images(link, reference):
 
 def request(url):
 	r = s.get(url)
-	r.html.render(sleep=1)
+	r.html.render(sleep=1, timeout=20)
 	return(r.html.xpath('/html/body/form/div[2]/div/div/div[1]/div/div[1]/div[3]/div[2]/div/div/div[3]', first=True))
                         
 def parse(products, category):
@@ -134,34 +133,60 @@ def parse(products, category):
 def output(csv_filename):
 	df = pd.DataFrame(product_list)
 	csv_filename += '.csv'
-	df.to_csv(csv_filename, index=False)
+	path = os.path.join(csv_dir, csv_filename)
+	df.to_csv(path, index=False)
 	print(f'Saved csv file as {csv_filename}')
 
+def check_files(category):
+	'''
+	Input:
+		category : category name to check against existing files
+	Output:
+		is_in_dir : flag to indicate whether file is in dir or not
+	'''
+	filename = category + '.csv'
+	files = os.listdir(csv_dir)
+	if filename in files:
+		is_in_dir = True
+		return(is_in_dir)
+	else:
+		is_in_dir = False
+		return(is_in_dir)
 
 # get category names and respective url
 cat_urls, cat_names = get_categories(base_url=base_url)
 N_cats = len(cat_urls)
 w = 1
-
-start_time = time.time()
+time_log = []
 
 for x, y in zip(cat_urls, cat_names):
-	product_list = []
-	print(f'Retrieving data from category {w}/{N_cats} : {y}')
-	# get the list of every page within tthe current product
-	page_list = paginate(x, base_url)
-	N_pages = len(page_list)
-	v = 1
-	for page in page_list:
-		products = request(page)
-		print(f'Getting items from page {v}/{N_pages}')
-		parse(products, y)
-		total_products = len(product_list)
-		print('Total items: {}'.format(total_products))		
-		v += 1
+	# check if the category was already listed
+	start_time = time.time()
+	is_in_dir = check_files(y)
+	if is_in_dir == True:
+		print(f'Category {y} is already listed in {y}.csv. Proceeding with next category.')
+		w += 1
+		continue
+	else:
+		product_list = []
+		print(f'Retrieving data from category {w}/{N_cats} : {y}')
+		# get the list of every page within tthe current product
+		page_list = paginate(x, base_url)
+		N_pages = len(page_list)
+		v = 1
+		for page in page_list:
+			products = request(page)
+			print(f'Getting items from page {v}/{N_pages}')
+			parse(products, y)
+			total_products = len(product_list)
+			print('Total items: {}'.format(total_products))		
+			v += 1
+			time.sleep(1)
+		print('\n')
 		time.sleep(1)
-	print('\n')
-	output(y)
-	w += 1	
-# consider putting time log
-print('--------This process took %s seconds--------' %(time.time() - start_time))
+		output(y)
+		w += 1	
+		time_taken = time.time() - start_time
+		time_log.append(time_taken)
+		print('--------This process took %s seconds--------' %(time_taken))
+print('--------The complete process took %s seconds--------' %(sum(time_taken)))
