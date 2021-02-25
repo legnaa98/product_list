@@ -23,7 +23,3 @@ for f in csv_files:
     description = description.map(split)
     df['description'] = description
     df.to_csv(f_path, index=False)
-
-
-
-# replace original column with clean column
