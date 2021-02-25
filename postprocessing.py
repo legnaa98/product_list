@@ -18,11 +18,11 @@ csv_files = [f for f in csv_files if '.csv' in f]
 # trim undesired text
 for f in csv_files:
     f_path = os.path.join(csv_path,f)
-    df = pd.read_csv(f)
+    df = pd.read_csv(f_path)
     description = df['description']
-    description = description.apply(split())
+    description = description.map(split)
     df['description'] = description
-    pd.to_csv(f_path)
+    df.to_csv(f_path, index=False)
 
 
 
