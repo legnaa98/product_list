@@ -15,8 +15,6 @@ for f in csv_files:
     description = description.apply(lambda x: x.split('Unidades por Caja')[0])
     df['description'] = description
     save_path = os.path.join(csv_path, f)
-    pd.to_csv()
-
-
+    df.to_csv(save_path, index=False)
 
 # replace original column with clean column
