@@ -48,8 +48,10 @@ def main(csv_path):
     
 
 csv_path = './csv_files' # only for testing, change later to ./csv_files
+# clean and merge csv files
 main(csv_path)
 
+# fix column names to client description
 complete_csv = '00_product_list_test.csv'
 complete_csv_path = os.path.join(csv_path, complete_csv)
 
