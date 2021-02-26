@@ -24,9 +24,6 @@ def clean_description(f_path):
     description = df['description']
     description = description.map(split)
     df['description'] = description
-<<<<<<< HEAD
-    df.to_csv(f_path, index=False)
-=======
     return(df)
     
 def main(csv_path):
@@ -59,4 +56,3 @@ complete_csv_path = os.path.join(csv_path, complete_csv)
 df = pd.read_csv('./csv_files/00_product_list_test.csv', header=None)
 df.columns = ['Nombre', 'Categoria', 'Referencia', 'Descripcion', 'URL', 'Imagen']
 df.to_csv(complete_csv_path, index=False)
->>>>>>> dataframe-clean-test
