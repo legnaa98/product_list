@@ -11,13 +11,11 @@ def split(x):
 def cell2list(df):
     # convert elements in column img_names to a list
     chrs_to_replace = ["[", "]", "'"]
-    img_names = df['img_names']
     for c in chrs_to_replace:
         try:
-            img_names = df['img_names'].map(lambda x: x.replace(c,''))
+            df['img_names'] = df['img_names'].map(lambda x: x.replace(c,''))
         except:
             pass
-    df['img_names'] = img_names
     return(df)
 
 def clean_description(f_path):
@@ -35,8 +33,9 @@ def main(csv_path):
     csv_files = [f for f in csv_files if '.csv' in f]
     # define the output file csv filename and path
     complete_csv = '00_product_list_test.csv'
+    complete_csv_path = os.path.join(csv_path, complete_csv)
 
-    if complete_csv in csv_path:
+    if complete_csv in csv_files:
         print(f'There is an existing file of the complete product list: {complete_csv}')
         exit()
 
@@ -45,13 +44,15 @@ def main(csv_path):
         f_path = os.path.join(csv_path,f)
         df = clean_description(f_path)
         df = cell2list(df)
-        #df.to_csv(, mode='a', index=False, header=False)
+        df.to_csv(complete_csv_path, mode='a', index=False, header=False)
     
-    ''' 
-    product_list = pd.read_csv(csv_path, header=None)
-    product_list.rename(mapper=['Nombre', 'Categoria', 'Referencia', 'Descripcion', 'URL', 'Imagen'], axis=1)
-    product_list.to_csv(csv_path, index=False)
-    '''
 
-csv_path = './' # only for testing, change later to ./csv_files
+csv_path = './csv_files' # only for testing, change later to ./csv_files
 main(csv_path)
+
+complete_csv = '00_product_list_test.csv'
+complete_csv_path = os.path.join(csv_path, complete_csv)
+
+df = pd.read_csv('./csv_files/00_product_list_test.csv', header=None)
+df.columns = ['Nombre', 'Categoria', 'Referencia', 'Descripcion', 'URL', 'Imagen']
+df.to_csv(complete_csv_path, index=False)
